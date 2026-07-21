@@ -1,0 +1,34 @@
+commands:
+  - id: open_firefox
+    type: open_app
+    app: firefox
+    phrases:
+      - "відкрий firefox"
+      - "відкрий браузер"
+      - "запусти firefox"
+      - "стелла відкрий firefox"
+      - "стелла відкрий браузер"
+
+  - id: open_discord
+    type: open_app
+    app: discord
+    phrases:
+      - "відкрий discord"
+      - "запусти discord"
+      - "стелла відкрий discord"
+
+  - id: volume_down
+    type: shell
+    dangerous: false
+    command: "pactl set-sink-volume @DEFAULT_SINK@ -10%"
+    phrases:
+      - "зменш гучність"
+      - "стелла зменш гучність"
+
+  - id: volume_up
+    type: shell
+    dangerous: false
+    command: "pactl set-sink-volume @DEFAULT_SINK@ +10%"
+    phrases:
+      - "збільш гучність"
+      - "стелла збільш гучність"

@@ -1,0 +1,23 @@
+assistant:
+  name: "стелла"
+  language: "uk"
+
+modes:
+  resource_mode: "balanced"
+  cloud_mode: "fallback"
+
+safety:
+  confirm_dangerous_actions: true
+  allow_shell_commands: true
+
+llm:
+  local_provider: "ollama"
+  local_model: "qwen2.5:3b"
+  cloud_provider: "none"
+
+stt:
+  provider: "none"
+  mode: "push_to_talk"
+
+tts:
+  provider: "none"
