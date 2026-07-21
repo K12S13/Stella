@@ -18,6 +18,10 @@ class StellaConfig:
     local_provider: str
     local_model: str
     cloud_provider: str
+    ollama_base_url: str
+    llm_timeout_seconds: int
+    ollama_keep_alive: str
+    ollama_num_ctx: int
     stt_provider: str
     stt_mode: str
     tts_provider: str
@@ -57,6 +61,10 @@ def load_config(path: str | Path = "stella/data/settings.yaml") -> StellaConfig:
         local_provider=str(_get(data, "llm.local_provider", "ollama")).lower().strip(),
         local_model=str(_get(data, "llm.local_model", "qwen2.5:3b")).strip(),
         cloud_provider=str(_get(data, "llm.cloud_provider", "none")).lower().strip(),
+        ollama_base_url=str(_get(data, "llm.ollama_base_url", "http://127.0.0.1:11434")).rstrip("/"),
+        llm_timeout_seconds=int(_get(data, "llm.timeout_seconds", 45)),
+        ollama_keep_alive=str(_get(data, "llm.keep_alive", "0")),
+        ollama_num_ctx=int(_get(data, "llm.num_ctx", 2048)),
         stt_provider=str(_get(data, "stt.provider", "none")).lower().strip(),
         stt_mode=str(_get(data, "stt.mode", "push_to_talk")).lower().strip(),
         tts_provider=str(_get(data, "tts.provider", "none")).lower().strip(),

@@ -72,3 +72,41 @@
 [2026-07-21 13:37:31] Stella: Напиши: так / ні
 [2026-07-21 13:37:33] User: так
 [2026-07-21 13:37:34] Stella: Примусово закрила діскорд.
+[2026-07-21 13:39:22] System: Stella UI started.
+[2026-07-21 13:39:22] System: Assistant name: стелла
+[2026-07-21 13:39:22] System: Command execution now runs in background thread.
+[2026-07-21 13:39:30] User: відкрий діскорд
+[2026-07-21 13:39:30] Debug: source=dynamic_app_action, confidence=0.78, normalized='відкрий діскорд'
+[2026-07-21 13:39:30] Stella: Готово, відкриваю діскорд.
+[2026-07-21 13:39:45] User: закрий діскорд
+[2026-07-21 13:39:45] Debug: source=dynamic_app_action, confidence=0.78, normalized='закрий діскорд'
+[2026-07-21 13:39:45] Stella: Дія 'close_app діскорд' може закрити програму або втратити незбережені дані. Підтверди повторно.
+[2026-07-21 13:39:45] Stella: Напиши: так / ні
+[2026-07-21 13:39:50] User: так
+[2026-07-21 13:39:52] Stella: Примусово закрила діскорд.
+[2026-07-21 13:40:01] User: вихід
+[2026-07-21 13:47:56] System: Stella UI started.
+[2026-07-21 13:47:56] System: Assistant name: стелла
+[2026-07-21 13:47:56] System: Command execution now runs in background thread.
+[2026-07-21 15:55:19] System: Stella UI started.
+[2026-07-21 15:55:19] System: Assistant name: стелла
+[2026-07-21 15:55:19] System: Command execution now runs in background thread.
+[2026-07-21 15:55:32] User: що таке кеш процесора
+[2026-07-21 15:55:32] Debug: source=none, confidence=0.00, normalized='що таке кеш процесора'
+[2026-07-21 15:55:32] Debug: No command matched. Routing to local LLM.
+[2026-07-21 15:55:38] Debug: LLM provider=ollama, model=qwen2.5:3b
+[2026-07-21 15:55:38] Stella: Кеш процесора - це буфер пам'яті для швидкої достпуної даних між CPU та контролером читаємо-відчита.
+[2026-07-21 15:59:40] User: відкрий діскорд
+[2026-07-21 15:59:40] Debug: source=dynamic_app_action, confidence=0.78, normalized='відкрий діскорд'
+[2026-07-21 15:59:40] Stella: Готово, відкриваю діскорд.
+[2026-07-21 15:59:58] User: закрий діскорд
+[2026-07-21 15:59:58] Debug: source=dynamic_app_action, confidence=0.78, normalized='закрий діскорд'
+[2026-07-21 15:59:58] Stella: Дія 'close_app діскорд' може закрити програму або втратити незбережені дані. Підтверди повторно.
+[2026-07-21 15:59:58] Stella: Напиши: так / ні
+[2026-07-21 16:00:05] User: так
+[2026-07-21 16:00:07] Stella: Примусово закрила діскорд.
+[2026-07-21 16:00:30] User: що таке кеш процесора
+[2026-07-21 16:00:30] Debug: source=none, confidence=0.00, normalized='що таке кеш процесора'
+[2026-07-21 16:00:30] Debug: No command matched. Routing to local LLM.
+[2026-07-21 16:00:33] Debug: LLM provider=ollama, model=qwen2.5:3b
+[2026-07-21 16:00:33] Stella: Кеш процесора - це міцний пам'ятник для обміну даннимами між процессором та окремими частинами програми, щоб зменшити час перехоплення даних.

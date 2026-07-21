@@ -14,6 +14,10 @@ llm:
   local_provider: "ollama"
   local_model: "qwen2.5:3b"
   cloud_provider: "none"
+  ollama_base_url: "http://127.0.0.1:11434"
+  timeout_seconds: 45
+  keep_alive: "0"
+  num_ctx: 2048
 
 stt:
   provider: "none"
