@@ -25,6 +25,11 @@ class StellaConfig:
     stt_provider: str
     stt_mode: str
     tts_provider: str
+    tts_enabled: bool
+    tts_speak_llm_answers: bool
+    tts_speak_command_results: bool
+    tts_piper_model: str
+    tts_output_player: str
 
 
 def _get(data: dict[str, Any], path: str, default: Any = None) -> Any:
@@ -68,4 +73,9 @@ def load_config(path: str | Path = "stella/data/settings.yaml") -> StellaConfig:
         stt_provider=str(_get(data, "stt.provider", "none")).lower().strip(),
         stt_mode=str(_get(data, "stt.mode", "push_to_talk")).lower().strip(),
         tts_provider=str(_get(data, "tts.provider", "none")).lower().strip(),
+        tts_enabled=bool(_get(data, "tts.enabled", False)),
+        tts_speak_llm_answers=bool(_get(data, "tts.speak_llm_answers", True)),
+        tts_speak_command_results=bool(_get(data, "tts.speak_command_results", False)),
+        tts_piper_model=str(_get(data, "tts.piper_model", "")).strip(),
+        tts_output_player=str(_get(data, "tts.output_player", "pw-play")).strip(),
     )

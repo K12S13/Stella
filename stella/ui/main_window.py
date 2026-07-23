@@ -23,6 +23,10 @@ from stella.commands.registry import CommandRegistry
 from stella.core.config import load_config
 from stella.core.history import HistoryLogger
 
+from stella.core.config import load_config
+from stella.tts.router import TTSRouter
+from stella.ui.settings_window import SettingsWindow
+
 
 class CommandWorker(QObject):
     finished = Signal(object)
@@ -68,6 +72,8 @@ class StellaMainWindow(QMainWindow):
         self.executor = CommandExecutor(self.config)
         self.history = HistoryLogger()
         self.llm_router = LLMRouter(self.config)
+        self.tts_router = TTSRouter(self.config)
+        self.settings_window: SettingsWindow | None = None
 
         self.pending_match: MatchResult | None = None
         self.worker_thread: QThread | None = None
@@ -95,10 +101,18 @@ class StellaMainWindow(QMainWindow):
         self.clear_button = QPushButton("Clear view")
         self.clear_button.clicked.connect(self.clear_view)
 
+        self.settings_button = QPushButton("Settings")
+        self.settings_button.clicked.connect(self.open_settings)
+
+        self.test_tts_button = QPushButton("Test TTS")
+        self.test_tts_button.clicked.connect(self.test_tts)
+
         input_layout = QHBoxLayout()
         input_layout.addWidget(self.input_line)
         input_layout.addWidget(self.execute_button)
         input_layout.addWidget(self.clear_button)
+        input_layout.addWidget(self.settings_button)
+        input_layout.addWidget(self.test_tts_button)
 
         layout = QVBoxLayout()
         layout.addWidget(self.status_label)
@@ -114,6 +128,53 @@ class StellaMainWindow(QMainWindow):
         self.write_system("Stella UI started.")
         self.write_system(f"Assistant name: {self.config.assistant_name}")
         self.write_system("Command execution now runs in background thread.")
+
+
+    def open_settings(self) -> None:
+        self.settings_window = SettingsWindow(on_saved=self.reload_runtime_config)
+        self.settings_window.show()
+        self.settings_window.raise_()
+        self.settings_window.activateWindow()
+
+    def reload_runtime_config(self) -> None:
+        self.config = load_config()
+        self.executor.config = self.config
+        self.llm_router = LLMRouter(self.config)
+        self.tts_router = TTSRouter(self.config)
+        self.write_system("Settings reloaded.")
+
+    def test_tts(self) -> None:
+        result = self.tts_router.speak("Привіт. Я Стелла. Голосовий модуль працює.")
+        if result.success:
+            self.write_debug("TTS test OK.")
+        else:
+            self.write_stella(f"TTS test failed: {result.message}")
+
+    def speak_if_needed(self, text: str, source: str) -> None:
+        if not text.strip():
+            self.write_debug("TTS skipped: empty text.")
+            return
+
+        if not self.config.tts_enabled:
+            self.write_debug("TTS skipped: tts.enabled = false.")
+            return
+
+        if source == "llm" and not self.config.tts_speak_llm_answers:
+            self.write_debug("TTS skipped: tts.speak_llm_answers = false.")
+            return
+
+        if source == "command" and not self.config.tts_speak_command_results:
+            self.write_debug("TTS skipped: tts.speak_command_results = false.")
+            return
+
+        self.write_debug(f"TTS speaking from source={source}...")
+
+        result = self.tts_router.speak(text)
+
+        if result.success:
+            self.write_debug("TTS OK.")
+        else:
+            self.write_debug(f"TTS failed: {result.message}")
 
     def apply_style(self) -> None:
         self.setStyleSheet("""
@@ -198,17 +259,26 @@ class StellaMainWindow(QMainWindow):
 
         self.llm_thread.start()
 
-    def on_llm_finished(self, result: object) -> None:
-        self.set_busy(False)
+    def on_llm_finished(self, result) -> None:
+        message = getattr(result, "message", "").strip()
 
-        if getattr(result, "success", False):
-            provider = getattr(result, "provider", "ollama")
-            model = getattr(result, "model", self.config.local_model)
-            self.write_debug(f"LLM provider={provider}, model={model}")
-            self.write_stella(getattr(result, "message", ""))
-            return
+        if not message:
+            message = "Ollama не повернула текст."
 
-        self.write_stella(getattr(result, "message", "LLM повернула невідому помилку."))
+        self.write_stella(message)
+        self.speak_if_needed(message, source="llm")
+
+        provider = getattr(result, "provider", "unknown")
+        model = getattr(result, "model", "unknown")
+
+        self.write_debug(f"LLM finished. Provider={provider}, model={model}")
+        self.set_status("Ready")
+
+        self.cleanup_llm_refs()
+
+        message = getattr(result, "message", "")
+        self.write_stella(message)
+        self.speak_if_needed(message, source="llm")
 
     def on_llm_failed(self, error: str) -> None:
         self.set_busy(False)
@@ -342,6 +412,7 @@ class StellaMainWindow(QMainWindow):
             self.set_busy(False)
             self.set_status("Waiting confirmation")
             self.write_stella(result.message)
+            self.speak_if_needed(result.message, source="command")
             self.write_stella("Напиши: так / ні")
             return
 
