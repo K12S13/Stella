@@ -9,19 +9,22 @@ safety:
   allow_shell_commands: true
 llm:
   local_provider: ollama
-  local_model: qwen2.5:3b
+  local_model: qwen2.5:7b
   cloud_provider: none
   ollama_base_url: http://127.0.0.1:11434
   timeout_seconds: 45
   keep_alive: '0'
-  num_ctx: 2048
+  num_ctx: 6144
+  local_model_memory_gb: 8
+  local_model_vram_gb: 8
+  cpu_threads: 4
 stt:
   provider: none
   mode: push_to_talk
 tts:
   enabled: true
-  provider: "piper"
+  provider: piper
   speak_llm_answers: true
   speak_command_results: false
-  piper_model: "models/piper/uk_UA/ukrainian_tts/medium/uk_UA-ukrainian_tts-medium.onnx"
-  output_player: "pw-play"
+  piper_model: models/piper/uk_UA/lada/x_low/uk_UA-lada-x_low.onnx
+  output_player: pw-play

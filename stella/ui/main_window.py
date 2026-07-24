@@ -274,7 +274,7 @@ class StellaMainWindow(QMainWindow):
         self.write_debug(f"LLM finished. Provider={provider}, model={model}")
         self.set_status("Ready")
 
-        self.cleanup_llm_refs()
+        # LLM cleanup is handled by QThread.finished -> cleanup_llm_refs
 
         message = getattr(result, "message", "")
         self.write_stella(message)
