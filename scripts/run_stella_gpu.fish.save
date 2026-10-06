@@ -1,0 +1,12 @@
+#!/usr/bin/env fish
+
+cd ~/PycharmProjects/Stella
+source .venv/bin/activate.fish
+
+set cuda_libs (python -c 'import importlib.util; mods=["nvidia.cublas.lib","nvidia.cudnn.lib"]; paths=[]
+for m in mods:
+    spec=importlib.util.find_spec(m)
+    if spec is None:
+        continue
+    if spec.submodule_search_locations:
+        paths.appen

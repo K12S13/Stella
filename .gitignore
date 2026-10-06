@@ -1,4 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual env
 .venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+
+# Runtime data
+*.log
+*.wav
+*.mp3
+*.ogg
+/tmp/
+temp/
+
+# Build
+build/
+dist/
+*.spec
+
+# Models / heavy files
+models/
+*.onnx
+*.bin
+*.gguf
+*.pt
+*.safetensors
+
+# Stella local runtime
+stella/data/history.log
+stella/data/wake_profile.yaml.venv/
 __pycache__/
 *.pyc
 .idea/

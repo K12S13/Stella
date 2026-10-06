@@ -6,6 +6,11 @@ import httpx
 
 from stella.core.config import StellaConfig
 
+import json
+from collections.abc import Iterator
+
+import requests
+
 
 @dataclass
 class LLMResult:
@@ -21,6 +26,57 @@ class OllamaProvider:
         self.base_url = config.ollama_base_url
         self.model = config.local_model
 
+    def stream(self, text: str) -> Iterator[str]:
+        url = f"{self.config.ollama_base_url}/api/chat"
+
+        payload = {
+            "model": self.config.local_model,
+            "stream": True,
+            "keep_alive": self.config.ollama_keep_alive,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "Ти Stella — локальний desktop assistant. "
+                        "Відповідай українською. "
+                        "Відповідай коротко і практично. "
+                        "Не вигадуй виконання дій на компʼютері."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": text,
+                },
+            ],
+            "options": {
+                "num_ctx": self.config.ollama_num_ctx,
+                "temperature": 0.2,
+                "top_p": 0.9,
+            },
+        }
+
+        with requests.post(
+            url,
+            json=payload,
+            stream=True,
+            timeout=(5, self.config.llm_timeout_seconds),
+        ) as response:
+            response.raise_for_status()
+
+            for raw_line in response.iter_lines(decode_unicode=True):
+                if not raw_line:
+                    continue
+
+                data = json.loads(raw_line)
+
+                if data.get("done"):
+                    break
+
+                chunk = data.get("message", {}).get("content", "")
+
+                if chunk:
+                    yield chunk
+
     def ask(self, user_text: str) -> LLMResult:
         system_prompt = (
             "Ти Stella — локальний desktop assistant. "
@@ -28,6 +84,10 @@ class OllamaProvider:
             "Відповідай коротко: 1–5 речень. "
             "Не вигадуй виконання дій на комп’ютері. "
             "Якщо користувач просить відкрити, закрити або змінити щось у системі — скажи, що це має робити command router."
+            "Не використовуй китайські, японські або корейські символи. "
+            "Не змішуй латиницю всередині українських або російських слів. "
+            "Англійські технічні терміни пиши окремими англійськими словами. "
+            "Якщо відповідь українською — кириличні слова мають бути кирилицею. "
         )
 
         payload = {

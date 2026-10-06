@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,75 +14,160 @@ from stella.core.config import StellaConfig
 class TTSResult:
     success: bool
     message: str
+    wav_path: str | None = None
+
+
+def normalize_for_piper(text: str) -> str:
+    replacements = {
+        "’": "'",
+        "ʼ": "'",
+        "`": "'",
+        "“": '"',
+        "”": '"',
+        "«": '"',
+        "»": '"',
+        "—": "-",
+        "–": "-",
+        "…": "...",
+    }
+
+    normalized = text.strip()
+
+    for old, new in replacements.items():
+        normalized = normalized.replace(old, new)
+
+    return normalized.lower()
 
 
 class PiperTTSProvider:
     def __init__(self, config: StellaConfig) -> None:
         self.config = config
 
-    def speak(self, text: str) -> TTSResult:
-        if not self.config.tts_enabled:
-            return TTSResult(False, "TTS вимкнено.")
+    def _piper_binary(self) -> str | None:
+        executable = shutil.which("piper")
 
-        if not text.strip():
-            return TTSResult(False, "Порожній текст для TTS.")
+        if executable:
+            return executable
 
-        model_path = Path(self.config.tts_piper_model)
+        venv_binary = Path(sys.executable).with_name("piper")
 
-        if not model_path.exists():
-            return TTSResult(False, f"Piper model not found: {model_path}")
+        if venv_binary.exists():
+            return str(venv_binary)
 
-        piper_path = shutil.which("piper")
+        return None
 
-        if not piper_path:
-            return TTSResult(False, "Команду piper не знайдено. Перевір: pip install piper-tts")
+    def _player_binary(self) -> str | None:
+        configured = self.config.tts_output_player.strip()
 
-        player = shutil.which(self.config.tts_output_player)
+        if configured and shutil.which(configured):
+            return configured
 
-        if not player:
-            fallback_player = shutil.which("pw-play") or shutil.which("aplay")
+        for candidate in ["pw-play", "paplay", "aplay"]:
+            if shutil.which(candidate):
+                return candidate
 
-            if not fallback_player:
-                return TTSResult(False, "Не знайдено аудіоплеєр: pw-play або aplay.")
+        return None
 
-            player = fallback_player
+    def synthesize_to_wav(
+        self,
+        text: str,
+        model_path: str | None = None,
+    ) -> TTSResult:
+        clean_text = normalize_for_piper(text)
+
+        if not clean_text:
+            return TTSResult(False, "TTS text is empty.")
+
+        piper_binary = self._piper_binary()
+
+        if piper_binary is None:
+            return TTSResult(False, "Piper binary not found.")
+
+        selected_model = model_path or self.config.tts_piper_model
+        model = Path(selected_model)
+
+        if not model.exists():
+            return TTSResult(False, f"Piper model not found: {model}")
+
+        with tempfile.NamedTemporaryFile(
+            suffix=".wav",
+            prefix="stella_tts_",
+            delete=False,
+        ) as temp_file:
+            wav_path = Path(temp_file.name)
+
+        synth = subprocess.run(
+            [
+                piper_binary,
+                "--model",
+                str(model),
+                "--output_file",
+                str(wav_path),
+            ],
+            input=clean_text,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        if synth.returncode != 0:
+            try:
+                wav_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+            output = "\n".join(
+                part.strip()
+                for part in [synth.stdout, synth.stderr]
+                if part.strip()
+            )
+
+            return TTSResult(False, output or "Piper synthesis failed.")
+
+        return TTSResult(True, "Synthesis OK.", str(wav_path))
+
+    def play_wav(self, wav_path: str) -> TTSResult:
+        player = self._player_binary()
+
+        if player is None:
+            return TTSResult(
+                False,
+                "No audio player found. Expected pw-play, paplay or aplay.",
+            )
+
+        play = subprocess.run(
+            [player, wav_path],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        if play.returncode != 0:
+            output = "\n".join(
+                part.strip()
+                for part in [play.stdout, play.stderr]
+                if part.strip()
+            )
+
+            return TTSResult(False, output or "Audio playback failed.")
+
+        return TTSResult(True, "Playback OK.")
+
+    def speak(
+        self,
+        text: str,
+        model_path: str | None = None,
+    ) -> TTSResult:
+        synth = self.synthesize_to_wav(text, model_path=model_path)
+
+        if not synth.success or synth.wav_path is None:
+            return synth
 
         try:
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as temp_file:
-                synth = subprocess.run(
-                    [
-                        piper_path,
-                        "--model",
-                        str(model_path),
-                        "--output_file",
-                        temp_file.name,
-                    ],
-                    input=text,
-                    text=True,
-                    capture_output=True,
-                    check=False,
-                )
+            return self.play_wav(synth.wav_path)
 
-                if synth.returncode != 0:
-                    return TTSResult(
-                        False,
-                        f"Piper error: {synth.stderr.strip() or synth.stdout.strip()}"
-                    )
-
-                play = subprocess.run(
-                    [player, temp_file.name],
-                    text=True,
-                    capture_output=True,
-                    check=False,
-                )
-
-                if play.returncode != 0:
-                    return TTSResult(
-                        False,
-                        f"Audio player error: {play.stderr.strip() or play.stdout.strip()}"
-                    )
-
-            return TTSResult(True, "Озвучено.")
-
-        except Exception as error:
-            return TTSResult(False, f"TTS exception: {error}")
+        finally:
+            try:
+                Path(synth.wav_path).unlink(missing_ok=True)
+            except OSError:
+                pass
